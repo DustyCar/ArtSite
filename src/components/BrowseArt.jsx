@@ -75,7 +75,7 @@ const BrowseArt = () => {
 
   return (
     <div>
-      <h1>The Metropolitan Museum of Art</h1>
+      <h1 className='browse-heading'>The Metropolitan Museum of Art</h1>
 
       {/* Search Bar */}
       <div className="search-container">
@@ -100,7 +100,7 @@ const BrowseArt = () => {
                   <img src={item.primaryImageSmall} alt={item.title} />
                   <h3>{item.title || "Untitled"}</h3>
                   <p>{item.artistDisplayName || "Unknown Artist"}</p>
-                  <p>{item.objectDate || "Date Unknown"}</p>
+                  
                 </Link>
               </div>
             ))}

@@ -28,16 +28,16 @@ const ArtDetails = () => {
           id: artDetail.objectID,
           title: artDetail.title,
           image: artDetail.primaryImageSmall,
-          artist: artDetail.artistDisplayName,
-          date: artDetail.objectDate,
+          artist: artDetail.artistDisplayName || 'Unknown Artist', // Default to "Unknown Artist"
+          date: artDetail.objectDate || 'Date Unknown', // Default to "Date Unknown"
           source: 'Met',
         }
       : {
           id: artDetail.id,
           title: artDetail.title,
           image: artDetail.images?.web?.url,
-          artist: artDetail.creators?.map((creator) => creator.description).join(', ') || 'Unknown Artist',
-          date: artDetail.creation_date,
+          artist: artDetail.creators?.map((creator) => creator.description).join(', ') || 'Unknown Artist', // Default to "Unknown Artist"
+          date: artDetail.creation_date || 'Date Unknown', // Default to "Date Unknown"
           source: 'Cleveland',
         };
 
@@ -63,9 +63,9 @@ const ArtDetails = () => {
         alt={artDetail.title}
         style={{ maxWidth: '100%', height: 'auto' }}
       />
-      <p><strong>Artist:</strong> {isFromMet ? artDetail.artistDisplayName : artDetail.creators?.map((creator) => creator.description).join(', ') || 'Unknown Artist'}</p>
-      <p><strong>Date:</strong> {isFromMet ? artDetail.objectDate : artDetail.creation_date || 'Date Unknown'}</p>
-      <p><strong>Description:</strong> {isFromMet ? artDetail.objectDescription : artDetail.wall_description || 'No description available.'}</p>
+      <p><strong>Artist:</strong> {isFromMet ? artDetail.artistDisplayName || 'Unknown Artist' : artDetail.creators?.map((creator) => creator.description).join(', ') || 'Unknown Artist'}</p>
+      <p><strong>Date:</strong> {isFromMet ? artDetail.objectDate || 'Date Unknown' : artDetail.creation_date || 'Date Unknown'}</p>
+      
 
       {/* Back button */}
       <button onClick={() => navigate(-1)} style={{ marginTop: '20px', marginRight: '10px' }}>
@@ -81,4 +81,5 @@ const ArtDetails = () => {
 };
 
 export default ArtDetails;
+
 

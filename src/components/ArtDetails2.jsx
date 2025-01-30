@@ -90,7 +90,7 @@ const ArtDetails2 = () => {
       )}
       <p><strong>Artist:</strong> {artDetail.creators?.map(creator => creator.description).join(', ') || artDetail.artistDisplayName || 'Unknown Artist'}</p>
       <p><strong>Date:</strong> {artDetail.creation_date || artDetail.objectDate || 'Date Unknown'}</p>
-      <p><strong>Description:</strong> {artDetail.thumbnail?.alt_text || artDetail.objectDescription || 'No description available.'}</p>
+      
 
       {/* Back button */}
       <button onClick={() => navigate(-1)} style={{ marginTop: '20px' }}>

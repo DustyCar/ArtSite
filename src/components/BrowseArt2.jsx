@@ -53,7 +53,7 @@ const BrowseArt2 = () => {
 
   return (
     <div>
-      <h1>The Cleveland Museum of Art Collection</h1>
+      <h1 className='browse-heading'>The Cleveland Museum of Art Collection</h1>
 
       {/* Search Bar */}
       <div className="search-container">
@@ -83,7 +83,7 @@ const BrowseArt2 = () => {
                     />
                     <h3>{item.title || 'Untitled'}</h3>
                     <p>{item.creators?.map((creator) => creator?.description).join(', ') || 'Unknown Artist'}</p>
-                    <p>{item.creation_date || 'Date Unknown'}</p>
+                   
                   </Link>
                 </div>
               ))
