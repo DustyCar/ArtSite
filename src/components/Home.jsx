@@ -41,7 +41,7 @@ const Home = () => {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', textAlign: 'center', color: '#B0B0B0' }}>
       <h2 style={{ fontSize: '45px', textAlign: 'center', fontWeight: '600', marginBottom: '20px', color: '#B0B0B0' }}>
-        "Browse, Discover, and Save Artworks from Leading Museums"
+      Explore, Discover, and Curate Your Own Personal Art Exhibitions from the World’s Leading Museums
       </h2>
 
       {/* Met Museum Section */}
