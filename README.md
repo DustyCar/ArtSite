@@ -8,7 +8,7 @@ This application allows users to search and explore artworks from multiple museu
 
 ## Live Demo  
 
-Check out the live version of the project here:  [Link Text](https://artquestweb.netlify.app/) 
+Check out the live version of the project here:  [Click Here](https://artquestweb.netlify.app/) 
 
 
 ## Prerequisites
