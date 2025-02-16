@@ -5,19 +5,28 @@ const BrowseArt2 = () => {
   const [art, setArt] = useState([]); // Paginated browsing data
   const [allArt, setAllArt] = useState([]); // Full dataset preloaded for search
   const [searchResults, setSearchResults] = useState([]); // Search results
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return parseInt(localStorage.getItem('currentPage')) || 1;
+  });
   const [totalPages, setTotalPages] = useState(678);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false); // Tracks search mode
   const ITEMS_PER_PAGE = 60;
 
+  // Persist current page in localStorage
+  useEffect(() => {
+    localStorage.setItem('currentPage', currentPage);
+  }, [currentPage]);
+
   // Fetch paginated art for browsing
   useEffect(() => {
-    setLoading(true);
-    fetchArtworks(currentPage);
-    preloadAllArt(); // Preload full dataset for fast searching
-  }, [currentPage]);
+    if (!isSearching) {
+      setLoading(true);
+      fetchArtworks(currentPage);
+      preloadAllArt();
+    }
+  }, [currentPage, isSearching]);
 
   const fetchArtworks = (page) => {
     const offset = (page - 1) * ITEMS_PER_PAGE;
@@ -31,15 +40,14 @@ const BrowseArt2 = () => {
         } else {
           setArt([]);
         }
-        setLoading(false);
       })
       .catch((error) => {
         console.error('Error fetching artwork data:', error);
-        setLoading(false);
-      });
+      })
+      .finally(() => setLoading(false));
   };
 
-  // **Preload all artwork in the background for fast searching**
+  // Preload all artwork in the background for fast searching
   const preloadAllArt = () => {
     if (allArt.length > 0) return; // Avoid duplicate fetch
 
@@ -62,19 +70,28 @@ const BrowseArt2 = () => {
     }
   };
 
-  // **Search using preloaded data**
+  // Improved Search Function
   const handleSearch = () => {
     if (!searchTerm.trim()) return;
     setIsSearching(true);
-    setSearchResults(
-      allArt.filter(
-        (item) =>
-          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.creators?.some((creator) =>
-            creator?.description?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-      )
+    setLoading(true);
+
+    const lowerSearch = searchTerm.toLowerCase();
+
+    const filteredResults = allArt.filter(
+      (item) =>
+        item.title.toLowerCase().includes(lowerSearch) ||
+        item.creators?.some((creator) =>
+          creator?.description?.toLowerCase().includes(lowerSearch)
+        ) ||
+        item.department?.toLowerCase().includes(lowerSearch) ||
+        item.technique?.toLowerCase().includes(lowerSearch) ||
+        item.description?.toLowerCase().includes(lowerSearch) ||
+        (item.tags && item.tags.some((tag) => tag.toLowerCase().includes(lowerSearch))) // NEW: Search in tags
     );
+
+    setSearchResults(filteredResults);
+    setLoading(false);
   };
 
   const resetSearch = () => {
@@ -83,25 +100,26 @@ const BrowseArt2 = () => {
     setSearchTerm('');
   };
 
+  const displayArt = isSearching ? searchResults : art;
+
   return (
     <div>
       <h1 className='browse-heading'>The Cleveland Museum of Art Collection</h1>
 
       {/* Search Bar */}
-      {!isSearching && (
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search by artwork title or artist name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button onClick={handleSearch}>Search</button>
-        </div>
-      )}
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search by title, artist, description, or tags..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button onClick={handleSearch}>Search</button>
+        {isSearching && <button onClick={resetSearch} className="reset-btn">Reset</button>}
+      </div>
 
       {/* Show loading message */}
-      {loading && !isSearching ? (
+      {loading ? (
         <p>Fetching artworks, please wait...</p>
       ) : (
         <>
@@ -110,16 +128,9 @@ const BrowseArt2 = () => {
             <p>No artworks found for "{searchTerm}"</p>
           )}
 
-          {/* Back to Browse Button */}
-          {isSearching && (
-            <div className="back-to-browse-container">
-              <button onClick={resetSearch} className="back-to-browse-btn">Back to Browse</button>
-            </div>
-          )}
-
           {/* Display either search results or paginated results */}
           <div className="gallery">
-            {(isSearching ? searchResults : art).map((item) => (
+            {displayArt.map((item) => (
               <div key={item.id} className="art-item">
                 <Link to={`/art2/${item.id}`}>
                   <img
@@ -151,6 +162,9 @@ const BrowseArt2 = () => {
 };
 
 export default BrowseArt2;
+
+
+
 
 
 

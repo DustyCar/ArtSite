@@ -1,36 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const BrowseArt = () => {
-  const [art, setArt] = useState([]); // Paginated art for browsing
-  const [searchResults, setSearchResults] = useState([]); // For holding search results
+  const [art, setArt] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isSearching, setIsSearching] = useState(false); // Track if search is in progress
+  const [isSearching, setIsSearching] = useState(false);
   const ITEMS_PER_PAGE = 60;
+  const objectIDsRef = useRef([]);
 
-  const shuffleArray = (array) => {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  };
+  useEffect(() => {
+    const savedPage = localStorage.getItem('currentPage');
+    if (savedPage) setCurrentPage(parseInt(savedPage, 10));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('currentPage', currentPage);
+  }, [currentPage]);
 
   useEffect(() => {
     if (!isSearching) {
       setLoading(true);
       fetch('https://collectionapi.metmuseum.org/public/collection/v1/objects?hasImages=true')
-        .then((response) => response.json())
-        .then((artworkData) => {
-          let objectIDs = artworkData.objectIDs;
-          objectIDs = shuffleArray(objectIDs);
-          setTotalPages(Math.ceil(objectIDs.length / ITEMS_PER_PAGE));
-          fetchArtData(objectIDs, currentPage);
+        .then(response => response.json())
+        .then(data => {
+          if (!data.objectIDs || data.objectIDs.length === 0) {
+            console.error('No object IDs returned');
+            setLoading(false);
+            return;
+          }
+          objectIDsRef.current = data.objectIDs.sort(() => Math.random() - 0.5);
+          setTotalPages(Math.ceil(objectIDsRef.current.length / ITEMS_PER_PAGE));
+          fetchArtData(objectIDsRef.current, currentPage);
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('Error fetching object IDs:', error);
           setLoading(false);
         });
@@ -43,55 +49,39 @@ const BrowseArt = () => {
     const paginatedIDs = objectIDs.slice(start, end);
 
     Promise.all(
-      paginatedIDs.map((id) =>
+      paginatedIDs.map(id =>
         fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`)
-          .then((response) => response.json())
-          .catch((error) => {
-            console.error(`Error fetching details for object ID ${id}:`, error);
+          .then(response => response.json())
+          .catch(error => {
+            console.error(`Error fetching details for ID ${id}:`, error);
             return null;
           })
       )
     )
-      .then((artDetails) => {
-        const filteredArt = artDetails.filter(
-          (item) => item && item.primaryImageSmall
-        );
-
-        // If it's a search, filter by title or artist (case-insensitive)
-        if (isSearch) {
-          const filteredSearchResults = filteredArt.filter((item) => {
-            const titleMatch = item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase());
-            const artistMatch = item.artistDisplayName && item.artistDisplayName.toLowerCase().includes(searchTerm.toLowerCase());
-            return titleMatch || artistMatch; // Match either title or artist name
-          });
-          setSearchResults(filteredSearchResults); // Update search results (no pagination)
-        } else {
-          setArt(filteredArt); // Update art for paginated browsing
-        }
-        setLoading(false);
+      .then(artDetails => {
+        const filteredArt = artDetails.filter(item => item && item.primaryImageSmall);
+        isSearch ? setSearchResults(filteredArt) : setArt(filteredArt);
       })
-      .catch((error) => {
-        console.error('Error fetching artwork details:', error);
-        setLoading(false);
-      });
+      .catch(error => console.error('Error fetching artwork details:', error))
+      .finally(() => setLoading(false));
   };
 
   const handleSearch = () => {
+    if (!searchTerm.trim()) return;
     setLoading(true);
-    setIsSearching(true); // Switch to search mode
-    const searchURL = `https://collectionapi.metmuseum.org/public/collection/v1/search?q=${searchTerm}&hasImages=true`;
-    fetch(searchURL)
-      .then((response) => response.json())
-      .then((data) => {
-        const objectIDs = data.objectIDs || [];
-        if (objectIDs.length > 0) {
-          fetchArtData(objectIDs, 1, true); // Pass true to indicate no pagination
+    setIsSearching(true);
+    
+    fetch(`https://collectionapi.metmuseum.org/public/collection/v1/search?q=${searchTerm}&hasImages=true`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.objectIDs?.length) {
+          fetchArtData(data.objectIDs, 1, true);
         } else {
-          setSearchResults([]); // No results found
+          setSearchResults([]);
           setLoading(false);
         }
       })
-      .catch((error) => {
+      .catch(error => {
         console.error('Error fetching search results:', error);
         setLoading(false);
       });
@@ -104,51 +94,41 @@ const BrowseArt = () => {
   };
 
   const handleBackToBrowse = () => {
-    setIsSearching(false); // Go back to the regular paginated view
-    setSearchTerm(''); // Clear the search term
-    setLoading(true); // Reset loading state
-    setCurrentPage(1); // Reset to first page
-    setArt([]); // Reset art state to empty while switching back
+    setIsSearching(false);
+    setSearchTerm('');
+    setLoading(true);
+    setCurrentPage(1);
+    setArt([]);
   };
 
   const displayArt = isSearching ? searchResults : art;
 
   return (
     <div>
-      <h1 className="browse-heading">The Metropolitan Museum of Art</h1>
+      <h1 className='browse-heading'>The Metropolitan Museum of Art</h1>
 
-      {/* Search Bar */}
-      {!isSearching && (
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search by artwork title or artist name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button onClick={handleSearch}>Search</button>
-        </div>
-      )}
+      <div className='search-container'>
+        <input
+          type='text'
+          placeholder='Search by artwork title or artist...'
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button onClick={handleSearch}>Search</button>
+        {isSearching && <button onClick={handleBackToBrowse} className='reset-btn'>Reset</button>}
+      </div>
 
-      {/* Show loading message while fetching data */}
       {loading ? (
-        <p>Fetching artworks, please wait...</p>
+        <p>Loading artworks, please wait...</p>
       ) : (
         <>
-          {/* Back to Browse Button */}
-          {isSearching && (
-            <button onClick={handleBackToBrowse}>Back to Browse</button>
-          )}
+          {isSearching && searchResults.length === 0 && <p>No results found for "{searchTerm}"</p>}
 
-          {/* Gallery of artworks */}
-          <div className="gallery">
-            {displayArt.length === 0 && isSearching && (
-              <p>No results found for "{searchTerm}"</p>
-            )}
-            {displayArt.map((item) => (
-              <div key={item.objectID} className="art-item">
+          <div className='gallery'>
+            {displayArt.map(item => (
+              <div key={item.objectID} className='art-item'>
                 <Link to={`/art/${item.objectID}`}>
-                  <img src={item.primaryImageSmall} alt={item.title} />
+                  <img src={item.primaryImageSmall} alt={item.title || 'Artwork'} />
                   <h3>{item.title || 'Untitled'}</h3>
                   <p>{item.artistDisplayName || 'Unknown Artist'}</p>
                 </Link>
@@ -156,36 +136,13 @@ const BrowseArt = () => {
             ))}
           </div>
 
-          {/* Pagination Controls (only for non-search mode) */}
           {!isSearching && (
-            <div className="pagination">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-              >
-                First
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <span>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                Last
-              </button>
+            <div className='pagination'>
+              <button onClick={() => handlePageChange(1)} disabled={currentPage === 1}>First</button>
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
+              <button onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}>Last</button>
             </div>
           )}
         </>
@@ -195,6 +152,8 @@ const BrowseArt = () => {
 };
 
 export default BrowseArt;
+
+
 
 
 
