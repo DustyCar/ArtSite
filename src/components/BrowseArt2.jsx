@@ -7,7 +7,7 @@ const BrowseArt2 = () => {
   const [currentPage, setCurrentPage] = useState(() => {
     return parseInt(localStorage.getItem('currentPage')) || 1;
   });
-  const [totalPages, setTotalPages] = useState(1); // Will be updated based on search results
+  const [totalPages, setTotalPages] = useState(678); // Set to default or dynamic from API
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false); // Tracks search mode
@@ -18,31 +18,24 @@ const BrowseArt2 = () => {
     localStorage.setItem('currentPage', currentPage);
   }, [currentPage]);
 
-  // Fetch paginated art for browsing or search
+  // Fetch paginated art for browsing
   useEffect(() => {
     if (!isSearching) {
       setLoading(true);
-      fetchArtworks(currentPage); // Fetch normal browsing data
-    } else {
-      // Fetch search results
-      handleSearch();
+      fetchArtworks(currentPage);
     }
   }, [currentPage, isSearching]);
 
-  const fetchArtworks = (page, searchQuery = '') => {
+  const fetchArtworks = (page) => {
     const offset = (page - 1) * ITEMS_PER_PAGE;
-    let API_URL = `https://openaccess-api.clevelandart.org/api/artworks/?has_image=1&limit=${ITEMS_PER_PAGE}&skip=${offset}`;
-
-    if (searchQuery) {
-      API_URL += `&q=${encodeURIComponent(searchQuery)}`;
-    }
+    const API_URL = `https://openaccess-api.clevelandart.org/api/artworks/?has_image=1&limit=${ITEMS_PER_PAGE}&skip=${offset}`;
 
     fetch(API_URL)
       .then((response) => response.json())
       .then((data) => {
         if (data.data && data.data.length > 0) {
           setArt(data.data.filter((item) => item.images?.web?.url));
-          setTotalPages(Math.ceil(data.total / ITEMS_PER_PAGE)); // Dynamically set totalPages based on the search result
+          setTotalPages(Math.ceil(data.pagination.total / ITEMS_PER_PAGE)); // Update totalPages based on API response
         } else {
           setArt([]);
         }
@@ -53,25 +46,37 @@ const BrowseArt2 = () => {
       .finally(() => setLoading(false));
   };
 
+  // Improved Search Function - Now searches via the API
   const handleSearch = () => {
-    if (!searchTerm.trim()) {
-      setIsSearching(false);
-      setSearchResults([]);
-      return;
-    }
-
+    if (!searchTerm.trim()) return;
     setIsSearching(true);
     setLoading(true);
-    fetchArtworks(currentPage, searchTerm);
+
+    const API_URL = `https://openaccess-api.clevelandart.org/api/artworks/?has_image=1&limit=${ITEMS_PER_PAGE}&skip=0&q=${searchTerm}`;
+
+    fetch(API_URL)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.data && data.data.length > 0) {
+          setSearchResults(data.data.filter((item) => item.images?.web?.url));
+          setTotalPages(Math.ceil(data.pagination.total / ITEMS_PER_PAGE)); // Update totalPages for search
+        } else {
+          setSearchResults([]);
+        }
+      })
+      .catch((error) => {
+        console.error('Error searching artwork data:', error);
+      })
+      .finally(() => setLoading(false));
   };
 
   const resetSearch = () => {
     setIsSearching(false);
     setSearchResults([]);
     setSearchTerm('');
-    setLoading(true);
-    fetchArtworks(currentPage); // Reset to normal browsing after search is cleared
   };
+
+  const displayArt = isSearching ? searchResults : art;
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -106,13 +111,13 @@ const BrowseArt2 = () => {
       ) : (
         <>
           {/* No artworks found for searchTerm */}
-          {isSearching && art.length === 0 && (
+          {isSearching && searchResults.length === 0 && (
             <p>No artworks found for "{searchTerm}"</p>
           )}
 
           {/* Display either search results or paginated results */}
           <div className="gallery">
-            {art.map((item) => (
+            {displayArt.map((item) => (
               <div key={item.id} className="art-item">
                 <Link to={`/art2/${item.id}`}>
                   <img
@@ -144,7 +149,6 @@ const BrowseArt2 = () => {
 };
 
 export default BrowseArt2;
-
 
 
 
