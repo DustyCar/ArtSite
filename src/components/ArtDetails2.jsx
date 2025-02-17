@@ -6,6 +6,8 @@ const ArtDetails2 = () => {
   const [artDetail, setArtDetail] = useState(null); // State for artwork details
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error handling
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isAlertVisible, setIsAlertVisible] = useState(false); // State to manage alert visibility
   const navigate = useNavigate(); // Hook to navigate
   const location = useLocation(); // Determines which museum's page we came from
 
@@ -67,9 +69,24 @@ const ArtDetails2 = () => {
     if (!savedArtworks.some((art) => art.id === newArtwork.id)) {
       savedArtworks.push(newArtwork);
       localStorage.setItem('exhibitionArtworks', JSON.stringify(savedArtworks));
-      alert(`${newArtwork.title || 'Untitled'} has been added to your exhibition!`);
+
+      const message = `${newArtwork.title || 'Untitled'} has been added to your exhibition!`;
+      setAlertMessage(message);
+      setIsAlertVisible(true);
+
+      // Hide the alert after 1 second
+      setTimeout(() => {
+        setIsAlertVisible(false);
+      }, 3000);
     } else {
-      alert(`${newArtwork.title || 'Untitled'} is already in your exhibition.`);
+      const message = `${newArtwork.title || 'Untitled'} is already in your exhibition.`;
+      setAlertMessage(message);
+      setIsAlertVisible(true);
+
+      // Hide the alert after 1 second
+      setTimeout(() => {
+        setIsAlertVisible(false);
+      }, 3000);
     }
   };
 
@@ -91,7 +108,6 @@ const ArtDetails2 = () => {
       <p><strong>Artist:</strong> {artDetail.creators?.map(creator => creator.description).join(', ') || artDetail.artistDisplayName || 'Unknown Artist'}</p>
       <p><strong>Date:</strong> {artDetail.creation_date || artDetail.objectDate || 'Date Unknown'}</p>
       
-
       {/* Back button */}
       <button onClick={() => navigate(-1)} style={{ marginTop: '20px' }}>
         Go Back
@@ -101,11 +117,19 @@ const ArtDetails2 = () => {
       <button onClick={addToExhibition} style={{ marginTop: '20px', marginLeft: '10px', backgroundColor: 'green' }}>
         Add to Exhibition
       </button>
+
+      {/* Alert */}
+      {isAlertVisible && (
+        <div className="alert">
+          <p>{alertMessage}</p>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ArtDetails2;
+
 
 
 

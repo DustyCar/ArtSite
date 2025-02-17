@@ -24,7 +24,7 @@ const BrowseArt = () => {
   useEffect(() => {
     if (!isSearching) {
       setLoading(true);
-      fetch('https://collectionapi.metmuseum.org/public/collection/v1/objects?hasImages=true')
+      fetch('https://collectionapi.metmuseum.org/public/collection/v1/objects')
         .then(response => response.json())
         .then(data => {
           if (!data.objectIDs || data.objectIDs.length === 0) {
@@ -71,7 +71,7 @@ const BrowseArt = () => {
     setLoading(true);
     setIsSearching(true);
     
-    fetch(`https://collectionapi.metmuseum.org/public/collection/v1/search?q=${searchTerm}&hasImages=true`)
+    fetch(`https://collectionapi.metmuseum.org/public/collection/v1/search?q=${searchTerm}`)
       .then(response => response.json())
       .then(data => {
         if (data.objectIDs?.length) {
@@ -110,9 +110,15 @@ const BrowseArt = () => {
       <div className='search-container'>
         <input
           type='text'
-          placeholder='Search by artwork title or artist...'
+          placeholder='Search by title, artist, description, or tags...'
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch(); // Trigger search when Enter key is pressed
+            }
+          }}
         />
         <button onClick={handleSearch}>Search</button>
         {isSearching && <button onClick={handleBackToBrowse} className='reset-btn'>Reset</button>}
@@ -152,6 +158,7 @@ const BrowseArt = () => {
 };
 
 export default BrowseArt;
+
 
 
 

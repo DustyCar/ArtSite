@@ -4,6 +4,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 const ArtDetails = () => {
   const { id } = useParams(); // Get the artwork ID from the URL
   const [artDetail, setArtDetail] = useState(null);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [isAlertVisible, setIsAlertVisible] = useState(false); // State to manage alert visibility
   const navigate = useNavigate(); // Hook for navigation
   const location = useLocation(); // Determines which museum's page we came from
 
@@ -45,9 +47,24 @@ const ArtDetails = () => {
     if (!savedArtworks.some((art) => art.id === newArtwork.id)) {
       savedArtworks.push(newArtwork);
       localStorage.setItem('exhibitionArtworks', JSON.stringify(savedArtworks));
-      alert(`${newArtwork.title || 'Untitled'} has been added to your exhibition!`);
+
+      const message = `${newArtwork.title || 'Untitled'} has been added to your exhibition!`;
+      setAlertMessage(message);
+      setIsAlertVisible(true);
+
+      // Hide the alert after 1 second
+      setTimeout(() => {
+        setIsAlertVisible(false);
+      }, 3000);
     } else {
-      alert(`${newArtwork.title || 'Untitled'} is already in your exhibition.`);
+      const message = `${newArtwork.title || 'Untitled'} is already in your exhibition.`;
+      setAlertMessage(message);
+      setIsAlertVisible(true);
+
+      // Hide the alert after 1 second
+      setTimeout(() => {
+        setIsAlertVisible(false);
+      }, 3000);
     }
   };
 
@@ -66,7 +83,6 @@ const ArtDetails = () => {
       <p><strong>Artist:</strong> {isFromMet ? artDetail.artistDisplayName || 'Unknown Artist' : artDetail.creators?.map((creator) => creator.description).join(', ') || 'Unknown Artist'}</p>
       <p><strong>Date:</strong> {isFromMet ? artDetail.objectDate || 'Date Unknown' : artDetail.creation_date || 'Date Unknown'}</p>
       
-
       {/* Back button */}
       <button onClick={() => navigate(-1)} style={{ marginTop: '20px', marginRight: '10px' }}>
         Go Back
@@ -76,10 +92,18 @@ const ArtDetails = () => {
       <button onClick={addToExhibition} style={{ marginTop: '20px', backgroundColor: 'green' }}>
         Add to Exhibition
       </button>
+
+      {/* Alert */}
+      {isAlertVisible && (
+        <div className="alert">
+          <p>{alertMessage}</p>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ArtDetails;
+
 
 
